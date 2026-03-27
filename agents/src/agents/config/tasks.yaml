@@ -1,0 +1,539 @@
+# =============================================================================
+# Money Agents — tasks.yaml
+# Production-grade tasks for all 5 crews.
+# All monetary values in Indian Rupees (INR).
+# =============================================================================
+
+
+# ── CREW 1: ONBOARDING ────────────────────────────────────────────────────
+
+interview_task:
+  description: >
+    Conduct a friendly, structured financial interview with the user.
+    Ask ONE question at a time. Wait for the answer before moving on.
+    Cover all sections below in natural conversational order.
+
+    SECTION 1 — PERSONAL
+    - Full name, age, city of residence
+    - Marital status, number of dependents (children, parents)
+    - Employment type: salaried / self-employed / business owner
+
+    SECTION 2 — INCOME
+    - Monthly take-home salary (post tax and PF deduction)
+    - Any additional income: freelance, rental, dividends, business profit
+    - Annual bonuses or variable pay (approximate)
+
+    SECTION 3 — EXPENSES
+    - Monthly fixed expenses: rent or home loan EMI, school fees,
+      insurance premiums, subscriptions
+    - Monthly variable expenses: groceries, dining, fuel, shopping,
+      entertainment
+    - Large annual expenses: vacations, festivals, medical, home repairs
+
+    SECTION 4 — ASSETS
+    - Savings and current account balances
+    - Fixed Deposits: total amount and average interest rate
+    - Mutual funds: current value and monthly SIP amount per fund
+    - PPF: current corpus and annual contribution
+    - EPF: current corpus and monthly contribution
+    - NPS: current corpus and monthly contribution
+    - Direct stocks or equity: approximate current market value
+    - Gold: physical grams or sovereign gold bonds value
+    - Real estate: owned properties and approximate current market value
+
+    SECTION 5 — LIABILITIES
+    - Home loan: outstanding principal, current EMI, tenure remaining
+    - Car loan: outstanding principal, EMI
+    - Personal loan: outstanding principal, EMI
+    - Education loan: outstanding principal, EMI
+    - Credit card: total outstanding dues across all cards
+
+    SECTION 6 — GOALS
+    - Top 3 financial goals with target amount (INR) and target year
+    - Target retirement age
+    - Interest in FIRE (Financial Independence Retire Early): yes / no
+
+    SECTION 7 — RISK AND READINESS
+    - Comfort with market volatility: conservative / moderate / aggressive
+    - Investment experience: beginner / intermediate / experienced
+    - Emergency fund: how many months of expenses currently saved
+    - Life insurance: sum assured amount and type (term / LIC / ULIP)
+    - Health insurance: sum insured and whether family floater
+
+    If any answer is vague (e.g. "some savings", "a few lakhs"), ask
+    a polite follow-up to get the actual number. Confirm large numbers
+    before recording them.
+  expected_output: >
+    A complete, structured set of financial data covering all 7 sections.
+    Format as clearly labelled key-value pairs under each section heading.
+    Flag any section where the user was unable to provide a value so the
+    profile builder can handle it appropriately.
+  agent: interviewer_agent
+
+
+build_profile_task:
+  description: >
+    Process the raw interview data and produce a complete, valid JSON
+    financial profile. Follow this exact schema:
+
+    {{
+      "personal": {{
+        "name": "string",
+        "age": 0,
+        "city": "string",
+        "employment_type": "salaried | self_employed | business",
+        "marital_status": "string",
+        "dependents": 0
+      }},
+      "income": {{
+        "monthly_take_home": 0,
+        "other_monthly_income": 0,
+        "annual_bonus": 0,
+        "monthly_gross": 0
+      }},
+      "expenses": {{
+        "monthly_fixed": 0,
+        "monthly_variable": 0,
+        "annual_one_time": 0,
+        "monthly_total": 0
+      }},
+      "assets": {{
+        "savings_account": 0,
+        "fixed_deposits": 0,
+        "mutual_funds_value": 0,
+        "monthly_sip": 0,
+        "ppf": 0,
+        "epf": 0,
+        "nps": 0,
+        "stocks": 0,
+        "gold_value": 0,
+        "real_estate": 0,
+        "total_assets": 0
+      }},
+      "liabilities": {{
+        "home_loan": 0,
+        "car_loan": 0,
+        "personal_loan": 0,
+        "education_loan": 0,
+        "credit_card_dues": 0,
+        "total_debt": 0,
+        "monthly_emi_total": 0
+      }},
+      "insurance": {{
+        "life_cover": 0,
+        "life_type": "term | lic | ulip | none",
+        "health_cover": 0,
+        "health_type": "individual | family_floater | none"
+      }},
+      "derived": {{
+        "net_worth": 0,
+        "monthly_surplus": 0,
+        "savings_rate_percent": 0,
+        "debt_to_asset_ratio": 0,
+        "emi_to_income_ratio": 0
+      }},
+      "goals": [
+        {{
+          "name": "string",
+          "target_amount": 0,
+          "target_year": 0,
+          "years_remaining": 0
+        }}
+      ],
+      "retirement_age_target": 0,
+      "fire_interest": true,
+      "risk_profile": {{
+        "tolerance": "conservative | moderate | aggressive",
+        "experience": "beginner | intermediate | experienced",
+        "emergency_fund_months": 0
+      }},
+      "data_quality": {{
+        "completeness_percent": 0,
+        "missing_fields": [],
+        "estimated_fields": []
+      }}
+    }}
+
+    DERIVED FIELD CALCULATIONS:
+    - net_worth = total_assets - total_debt
+    - monthly_surplus = monthly_take_home + other_monthly_income
+                        - monthly_total_expenses - monthly_emi_total
+    - savings_rate_percent = (monthly_surplus / monthly_take_home) * 100
+    - debt_to_asset_ratio = total_debt / total_assets (round to 2 decimals)
+    - emi_to_income_ratio = monthly_emi_total / monthly_take_home * 100
+
+    For any field the user did not provide:
+    - Add the field name to "missing_fields" if completely unknown
+    - Add to "estimated_fields" with a note if you used a reasonable default
+    - Set completeness_percent = (fields_filled / total_fields) * 100
+  expected_output: >
+    A single valid JSON object matching the schema above exactly.
+    All numeric fields in INR. All derived fields calculated correctly.
+    data_quality section accurately reflects missing and estimated values.
+    No extra commentary — just the JSON object.
+  agent: profile_builder_agent
+  context:
+    - interview_task
+  output_file: outputs/financial_profile.json
+
+
+# ── CREW 2: FIRE PLANNER ──────────────────────────────────────────────────
+
+fire_analysis_task:
+  description: >
+    Using the user's financial profile: {profile}
+
+    Perform a complete FIRE (Financial Independence Retire Early) analysis:
+
+    1. CORPUS CALCULATION
+       - Calculate required retirement corpus using the 25x rule
+         (annual expenses × 25) adjusted for Indian inflation (6% average)
+       - Calculate corpus needed at target retirement age accounting for
+         life expectancy of 85 years
+       - Show both conservative (5% withdrawal) and standard (4%) scenarios
+
+    2. CURRENT TRAJECTORY
+       - Project current corpus growth at current savings rate
+       - Calculate current FIRE date based on existing trajectory
+       - Show the gap between current trajectory and target retirement age
+
+    3. REQUIRED SAVINGS RATE
+       - Calculate the exact monthly savings required to hit FIRE target
+       - Break down by instrument: equity SIP, PPF, NPS, direct equity
+       - Show what percentage of take-home this represents
+
+    4. INVESTMENT VEHICLE BREAKDOWN
+       - Equity mutual funds (suggested allocation and expected CAGR: 12%)
+       - PPF (current limit ₹1.5L/year, effective post-tax return ~7.1%)
+       - NPS (tax benefit under 80CCD(1B), expected return ~10%)
+       - Direct equity (only if experience is intermediate or above)
+       - Debt funds for stability as retirement approaches
+
+    5. MILESTONE TIMELINE
+       - Year-by-year corpus projection table (current year to retirement)
+       - Key milestones: first ₹10L, ₹25L, ₹50L, ₹1Cr, target corpus
+  expected_output: >
+    A detailed FIRE analysis report in Markdown with:
+    - Required corpus (conservative and standard scenarios) in INR
+    - Current projected FIRE date vs target date
+    - Monthly savings required broken down by instrument
+    - Year-by-year milestone table
+    - Clear verdict: on track / needs acceleration / major gap
+  agent: fire_analyst_agent
+
+
+sip_plan_task:
+  description: >
+    Using the FIRE analysis and the user's financial profile: {profile}
+
+    Build a concrete, actionable SIP and investment allocation plan:
+
+    1. MONTHLY ALLOCATION TABLE
+       - Exact rupee amount to invest in each instrument every month
+       - Equity large cap SIP, mid cap SIP, flexi cap SIP
+       - PPF monthly equivalent (annual ₹1.5L / 12)
+       - NPS monthly contribution
+       - Emergency fund top-up if below 6 months
+       - Gold SIP if not already allocated
+
+    2. FUND RECOMMENDATIONS
+       - Suggest 2-3 specific mutual fund categories per equity allocation
+       - Explain why each category suits this user's profile and timeline
+       - Note expense ratio targets (direct plan, below 0.5% for index)
+
+    3. REBALANCING SCHEDULE
+       - When and how to rebalance the portfolio
+       - Asset allocation targets by age bracket
+       - Trigger conditions for review (market fall >20%, income change)
+
+    4. STEP-UP PLAN
+       - Recommend annual SIP step-up percentage (typically 10-15%)
+       - Show impact of step-up on final corpus vs flat SIP
+
+    5. RISK GUARDRAILS
+       - Stop-loss rules for direct equity
+       - Debt allocation increase schedule as retirement nears
+       - Insurance adequacy check (life cover should be 10-15x annual income)
+  expected_output: >
+    A production-ready SIP plan in Markdown with:
+    - Month-by-month allocation table in INR
+    - Fund category recommendations with rationale
+    - Rebalancing and step-up schedule
+    - Risk guardrails clearly stated
+  agent: sip_planner_agent
+  context:
+    - fire_analysis_task
+  output_file: outputs/fire_roadmap.md
+
+
+# ── CREW 3: TAX WIZARD ────────────────────────────────────────────────────
+
+tax_research_task:
+  description: >
+    Using the user's financial profile: {profile}
+
+    Research and identify every applicable tax saving opportunity:
+
+    1. SECTION 80C (limit ₹1,50,000)
+       - Current utilisation: EPF + PPF + ELSS SIP + LIC premium + home loan principal
+       - Gap to ₹1.5L limit and best instrument to fill it
+
+    2. SECTION 80D — HEALTH INSURANCE
+       - Premium paid vs deduction limit (₹25,000 self + ₹50,000 parents if senior)
+       - Is the user underinsured? Recommendation.
+
+    3. SECTION 80CCD(1B) — NPS ADDITIONAL
+       - Additional ₹50,000 deduction over 80C limit
+       - Current NPS contribution vs this limit
+
+    4. HRA EXEMPTION (if salaried and renting)
+       - Calculate HRA exemption using least of 3 rules
+       - Flag if user owns home but still claims HRA incorrectly
+
+    5. HOME LOAN DEDUCTIONS
+       - Section 24(b): interest deduction up to ₹2,00,000
+       - Section 80C: principal repayment within ₹1.5L limit
+       - Current utilisation vs maximum possible
+
+    6. CAPITAL GAINS
+       - LTCG on equity (>1 year, 10% above ₹1L exemption)
+       - STCG on equity (15%)
+       - Debt fund taxation (as per income slab post 2023 amendment)
+       - Tax loss harvesting opportunities
+
+    7. OTHER DEDUCTIONS
+       - 80G: charitable donations
+       - 80E: education loan interest (no limit, 8 years)
+       - LTA: leave travel allowance if salaried
+       - Standard deduction: ₹50,000 for salaried (old regime)
+  expected_output: >
+    A comprehensive tax opportunity report listing every applicable
+    deduction, current utilisation, maximum possible, and gap in INR.
+    Include specific action items to maximise each deduction before
+    the financial year end.
+  agent: tax_researcher_agent
+
+
+tax_regime_task:
+  description: >
+    Using the tax research findings and financial profile: {profile}
+
+    Perform a complete old vs new tax regime comparison and produce
+    an actionable tax optimisation plan:
+
+    1. TAX LIABILITY COMPARISON TABLE
+       - Gross income, all applicable deductions (old regime only)
+       - Taxable income under old regime vs new regime
+       - Exact tax payable under each regime (include cess and surcharge)
+       - Recommend the regime that saves more — state the exact INR saving
+
+    2. OLD REGIME — DEDUCTION OPTIMISATION
+       - List every deduction the user is currently claiming
+       - List every deduction they are eligible for but NOT claiming
+       - Calculate total additional savings if all gaps are filled
+
+    3. NEW REGIME — SUITABILITY CHECK
+       - When new regime makes sense (low deductions, high income)
+       - What the user gives up by switching to new regime
+
+    4. YEAR-END ACTION PLAN
+       - Prioritised list of actions to take before 31st March
+       - Deadline-driven: investments to make, documents to collect
+       - Estimated tax saved for each action in INR
+
+    5. ADVANCE TAX CHECK
+       - Is the user liable for advance tax?
+       - Quarterly schedule if applicable
+  expected_output: >
+    A complete tax analysis report in Markdown with:
+    - Side-by-side old vs new regime comparison table
+    - Clear regime recommendation with exact INR saving
+    - Prioritised year-end action plan with deadlines
+    - Total potential tax saving if all recommendations are followed
+  agent: regime_advisor_agent
+  context:
+    - tax_research_task
+  output_file: outputs/tax_analysis.md
+
+
+# ── CREW 4: HEALTH SCORE ──────────────────────────────────────────────────
+
+score_task:
+  description: >
+    Using the user's financial profile: {profile}
+
+    Score the user's financial health across these 6 dimensions.
+    Each dimension is scored out of 100. Be honest and precise.
+
+    DIMENSION 1 — SAVINGS RATE (weight: 25%)
+    - Benchmark: saving 20%+ of take-home = 100, 15-20% = 80,
+      10-15% = 60, 5-10% = 40, below 5% = 20, negative = 0
+    - Score based on monthly_surplus / monthly_take_home
+
+    DIMENSION 2 — DEBT MANAGEMENT (weight: 20%)
+    - EMI-to-income ratio: below 20% = 100, 20-30% = 70,
+      30-40% = 50, 40-50% = 30, above 50% = 0
+    - Penalise heavily for credit card revolving debt
+    - Bonus points if only home loan (productive debt)
+
+    DIMENSION 3 — EMERGENCY FUND (weight: 20%)
+    - 6+ months expenses = 100, 4-6 months = 75,
+      2-4 months = 50, 1-2 months = 25, below 1 month = 0
+
+    DIMENSION 4 — INVESTMENT DIVERSIFICATION (weight: 15%)
+    - Score based on spread across: equity MF, debt, gold,
+      real estate, PPF/EPF/NPS
+    - Penalise if more than 60% in any single asset class
+    - Penalise if only FD and savings account
+
+    DIMENSION 5 — INSURANCE COVERAGE (weight: 10%)
+    - Life: term cover >= 10x annual income = 100,
+      5-10x = 60, below 5x = 20, no term insurance = 0
+    - Health: family floater >= ₹10L = 100, ₹5-10L = 70,
+      below ₹5L = 40, no health insurance = 0
+    - Average of life and health scores
+
+    DIMENSION 6 — GOAL PROGRESS (weight: 10%)
+    - Are goals defined with amounts and timelines? (20 pts)
+    - Is current corpus on track for each goal? (60 pts)
+    - Is there an investment earmarked for each goal? (20 pts)
+
+    OVERALL SCORE = weighted average of all 6 dimensions.
+    Grade: 85-100 = Excellent, 70-84 = Good, 50-69 = Needs Work,
+           below 50 = At Risk
+  expected_output: >
+    A structured health score report with:
+    - Score and reasoning for each of the 6 dimensions
+    - Weighted overall score out of 100
+    - Letter grade and one-line verdict
+    - Top 3 strengths and top 3 weaknesses identified
+  agent: scorer_agent
+
+
+advice_task:
+  description: >
+    Using the health scores and the user's financial profile: {profile}
+
+    Build a prioritised 90-day financial improvement plan:
+
+    1. IMMEDIATE (This Week — Days 1-7)
+       - One or two high-impact actions that can be done right now
+       - Focus on the lowest-scoring dimension
+       - Each action must reference the user's actual numbers
+
+    2. SHORT TERM (This Month — Days 8-30)
+       - 3-5 actions to take in the next 30 days
+       - Include specific amounts, specific funds, specific deadlines
+       - Must address the top 2 weakest dimensions
+
+    3. MEDIUM TERM (This Quarter — Days 31-90)
+       - Structural changes: rebalancing, insurance upgrade, SIP increase
+       - Progress milestone: what the score should look like in 90 days
+       - Which dimension will improve the most and by how much
+
+    4. SCORE PROJECTION
+       - If all recommendations are followed: projected score in 90 days
+       - If only immediate + short-term actions: projected score
+       - If nothing changes: where the score will be in 12 months
+
+    Every recommendation must:
+    - Reference the user's actual number (e.g. "your EMI ratio is 38%")
+    - Give the specific action (e.g. "prepay ₹50,000 on personal loan")
+    - State the expected impact on the score
+  expected_output: >
+    A 90-day financial improvement plan in Markdown with:
+    - Week 1, Month 1, and Quarter 1 action lists
+    - Every action tied to a specific number from the user's profile
+    - Score projection table showing improvement over time
+  agent: advisor_agent
+  context:
+    - score_task
+  output_file: outputs/health_score.md
+
+
+# ── CREW 5: DAILY FEED ────────────────────────────────────────────────────
+
+market_watch_task:
+  description: >
+    Research and summarise today's key financial market developments
+    relevant to Indian retail investors. Cover the following:
+
+    1. EQUITY MARKETS
+       - Nifty 50 and Sensex: day's movement, closing level, trend
+       - Top 5 sectoral indices: which sectors gained or fell and why
+       - Top 3 gainers and top 3 losers in Nifty 50 today
+       - FII and DII net buy/sell figures
+
+    2. MACROECONOMIC SIGNALS
+       - Any RBI announcements, repo rate signals, or liquidity measures
+       - Inflation data (CPI/WPI) if released today
+       - USD/INR exchange rate movement and implication
+       - Crude oil price and its impact on India
+
+    3. MUTUAL FUND MARKET
+       - Any major fund house announcements, NFOs, or scheme changes
+       - SEBI circulars or regulatory updates affecting MF investors
+
+    4. FIXED INCOME AND GOLD
+       - 10-year G-Sec yield movement
+       - Gold price in INR today (per 10 grams)
+       - Any changes to FD rates by major banks
+
+    5. CORPORATE NEWS
+       - Top 3 corporate results or major announcements today
+       - Any news on large-cap stocks likely to be in retail portfolios
+
+    Prioritise factual, number-driven summaries. No opinions or
+    predictions. Mark anything speculative clearly.
+  expected_output: >
+    A structured market intelligence brief with 5 sections as above.
+    Each section has 3-5 bullet points with specific numbers.
+    Written in plain English, no jargon. Maximum 600 words total.
+  agent: market_watcher_agent
+
+
+feed_compose_task:
+  description: >
+    Using the market intelligence brief and the user's financial
+    profile: {profile}
+
+    Compose a personalised daily financial feed for this specific user.
+
+    1. PORTFOLIO RELEVANCE FILTER
+       - From all market news, identify only what directly affects
+         the user's holdings, SIP funds, or active goals
+       - If the user holds SIPs in mid-cap funds, lead with mid-cap news
+       - If they have a home loan, lead with interest rate signals
+       - If they hold gold, highlight gold price movement
+
+    2. YOUR MONEY TODAY
+       - 3-5 bullet points: what happened today that affects THIS user
+       - Each point references their actual holding or goal
+       - Example: "Your mid-cap SIP funds fell 1.2% today due to FII
+         selling. No action needed — stay invested."
+
+    3. ACTION ITEMS (if any)
+       - Only include if there is something the user genuinely should do
+       - Be specific: "Consider booking LTCG loss on [type of holding]
+         before 31st March to save tax"
+       - If no action needed, say clearly: "No action required today."
+
+    4. ONE INSIGHT
+       - One educational insight connected to today's news
+       - Relevant to their profile and learning level
+       - Maximum 3 sentences
+
+    5. TOMORROW'S WATCH
+       - One event or data release tomorrow the user should be aware of
+       - Why it matters for their specific portfolio or goals
+
+    Tone: friendly, direct, and concise. Like a smart friend who
+    follows markets, not a financial news anchor.
+  expected_output: >
+    A personalised daily financial feed in Markdown with all 5 sections.
+    Maximum 400 words. Conversational tone. Every point tied to the
+    user's actual financial situation, not generic market commentary.
+  agent: feed_composer_agent
+  context:
+    - market_watch_task
+  output_file: outputs/daily_feed.md

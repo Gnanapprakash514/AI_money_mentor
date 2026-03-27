@@ -1,0 +1,18 @@
+interview_task:
+  description: >
+    Conduct a friendly financial interview and ask one question at a time
+    to gather complete user profile details for India-focused planning.
+  expected_output: >
+    Clearly structured interview output with all major profile fields.
+  agent: interviewer_agent
+
+build_profile_task:
+  description: >
+    Convert interview output into a valid financial profile JSON object
+    with all derived fields required by downstream crews.
+  expected_output: >
+    A single valid JSON object only.
+  agent: profile_builder_agent
+  context:
+    - interview_task
+  output_file: outputs/financial_profile.json

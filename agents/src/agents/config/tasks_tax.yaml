@@ -1,0 +1,18 @@
+tax_research_task:
+  description: >
+    Using profile: {profile}, identify Indian tax-saving opportunities
+    including 80C, 80D, 80CCD, HRA, home loan and capital gains points.
+  expected_output: >
+    Comprehensive deduction opportunity report with INR gaps.
+  agent: tax_researcher_agent
+
+tax_regime_task:
+  description: >
+    Using tax findings and profile: {profile}, compare old vs new regimes
+    and provide exact INR saving with deadline-driven action plan.
+  expected_output: >
+    Complete tax analysis with side-by-side table and recommendation.
+  agent: regime_advisor_agent
+  context:
+    - tax_research_task
+  output_file: outputs/tax_analysis.md
