@@ -1,0 +1,18 @@
+score_task:
+  description: >
+    Using profile: {profile}, score the user across six dimensions:
+    savings, debt, emergency fund, diversification, insurance, goals.
+  expected_output: >
+    Structured 6-dimension score report and weighted overall score.
+  agent: scorer_agent
+
+advice_task:
+  description: >
+    Using scores and profile: {profile}, produce a practical 90-day
+    plan with week/month/quarter actions and score projection.
+  expected_output: >
+    90-day improvement plan in markdown.
+  agent: advisor_agent
+  context:
+    - score_task
+  output_file: outputs/health_score.md
