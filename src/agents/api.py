@@ -476,10 +476,8 @@ def run_couple(data: ProfileInput):
 
     return {"success": True, "output": output}
 
-# Ensure the frontend directory exists
 os.makedirs("frontend", exist_ok=True)
 
-# Mount the frontend directory to serve static files
 app.mount("/static", StaticFiles(directory="frontend"), name="static")
 
 @app.get("/")
