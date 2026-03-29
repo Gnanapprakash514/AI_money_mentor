@@ -1,0 +1,12 @@
+.env
+__pycache__/
+.DS_Store
+.venv/
+node_modules/
+frontend/node_modules/
+dist/
+frontend/dist/
+outputs/
+*.log
+*.tmp
+desktop.ini
