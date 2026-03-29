@@ -181,7 +181,7 @@ class FeedCrew:
             goal="Generate financial feed",
             backstory="A financial market analyst who tracks daily trends and generates personalized insights based on user profiles.",
             verbose=True,
-            tools=[],   # 🔥 REMOVE market_tool
+            tools=[],  
         )
 
         task = Task(
