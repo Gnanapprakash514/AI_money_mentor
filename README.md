@@ -1,54 +1,252 @@
-# Agents Crew
+# AI Money Mentor
 
-Welcome to the Agents Crew project, powered by [crewAI](https://crewai.com). This template is designed to help you set up a multi-agent AI system with ease, leveraging the powerful and flexible framework provided by crewAI. Our goal is to enable your agents to collaborate effectively on complex tasks, maximizing their collective intelligence and capabilities.
+AI Money Mentor is a full-stack personal-finance assistant built with a React frontend and a FastAPI + CrewAI backend. The app collects onboarding answers, builds a structured financial profile, and uses that profile across all planner agents:
+
+- Onboarding Agent
+- FIRE Planner Agent
+- Tax Agent
+- Health Score Agent
+- Daily Feed Agent
+- Couple Planner Agent
+
+## Features
+
+- Conversational onboarding flow based on backend-managed questions
+- Shared profile persistence and reuse across all planners
+- Frontend dashboards reflecting onboarding and planner data
+- Multi-agent backend orchestration with CrewAI
+- FastAPI REST API for frontend integration
+
+## Tech Stack
+
+- Backend: Python, FastAPI, CrewAI, uv
+- Frontend: React, Vite, react-router-dom
+- Package Managers: uv (Python), npm (Node)
+
+## Project Structure
+
+```text
+agents/
+	frontend/
+		src/
+			api/
+				client.js
+			components/
+				Layout.jsx
+			pages/
+				Onboarding.jsx
+				Dashboard.jsx
+				FIREPlanner.jsx
+				TaxWizard.jsx
+				HealthScore.jsx
+				CouplePlanner.jsx
+			App.jsx
+			main.jsx
+		package.json
+		vite.config.js
+	src/
+		agents/
+			api.py
+			crew.py
+			e2e_terminal.py
+			main.py
+			config/
+				agents.yaml
+				tasks_onboarding.yaml
+				tasks_fire.yaml
+				tasks_tax.yaml
+				tasks_health.yaml
+				tasks_feed.yaml
+			tools/
+				tools.py
+				custom_tool.py
+	knowledge/
+	outputs/
+	pyproject.toml
+	requirements.txt
+```
+
+## Architecture
+
+### High-Level Flow
+
+1. User answers onboarding questions in frontend chat.
+2. Backend onboarding endpoint maps answers to profile fields.
+3. Profile is saved to outputs/financial_profile.json.
+4. Planner endpoints resolve this saved profile by default.
+5. Planner results are returned to frontend pages.
+
+### Backend Layers
+
+- api.py: FastAPI routes, profile persistence, merge and orchestration logic
+- crew.py: CrewAI agent/task definitions and output generation
+- config/*.yaml: Agent role/task prompt configuration
+- e2e_terminal.py: Reference onboarding and planner pipeline flow
+
+### Frontend Layers
+
+- src/api/client.js: API calls, profile storage, onboarding helpers
+- pages/*: Route-specific planners and dashboards
+- components/Layout.jsx: App shell and navigation
 
 ## Installation
 
-Ensure you have Python >=3.10 <3.14 installed on your system. This project uses [UV](https://docs.astral.sh/uv/) for dependency management and package handling, offering a seamless setup and execution experience.
+### Prerequisites
 
-First, if you haven't already, install uv:
+- Python 3.10 to 3.13
+- Node.js 18+
+- npm 9+
+- uv installed globally
 
-```bash
+Install uv (if needed):
+
+```powershell
 pip install uv
 ```
 
-Next, navigate to your project directory and install the dependencies:
+### 1) Backend Setup
 
-(Optional) Lock the dependencies and install them by using the CLI command:
-```bash
-crewai install
-```
-### Customizing
+From agents root:
 
-**Add your `OPENAI_API_KEY` into the `.env` file**
-
-- Modify `src/agents/config/agents.yaml` to define your agents
-- Modify `src/agents/config/tasks.yaml` to define your tasks
-- Modify `src/agents/crew.py` to add your own logic, tools and specific args
-- Modify `src/agents/main.py` to add custom inputs for your agents and tasks
-
-## Running the Project
-
-To kickstart your crew of AI agents and begin task execution, run this from the root folder of your project:
-
-```bash
-$ crewai run
+```powershell
+Set-Location C:\Users\BHARANIDHARAN.S\Downloads\gen_ai\gen_ai\Money\agents
+python -m venv .venv
+. .\.venv\Scripts\Activate.ps1
+uv sync
 ```
 
-This command initializes the agents Crew, assembling the agents and assigning them tasks as defined in your configuration.
+Alternative pip install using requirements file:
 
-This example, unmodified, will run the create a `report.md` file with the output of a research on LLMs in the root folder.
+```powershell
+pip install -r requirements.txt
+```
 
-## Understanding Your Crew
+### 2) Frontend Setup
 
-The agents Crew is composed of multiple AI agents, each with unique roles, goals, and tools. These agents collaborate on a series of tasks, defined in `config/tasks.yaml`, leveraging their collective skills to achieve complex objectives. The `config/agents.yaml` file outlines the capabilities and configurations of each agent in your crew.
+```powershell
+Set-Location C:\Users\BHARANIDHARAN.S\Downloads\gen_ai\gen_ai\Money\agents\frontend
+npm install
+```
 
-## Support
+## Environment Variables
 
-For support, questions, or feedback regarding the Agents Crew or crewAI.
-- Visit our [documentation](https://docs.crewai.com)
-- Reach out to us through our [GitHub repository](https://github.com/joaomdmoura/crewai)
-- [Join our Discord](https://discord.com/invite/X4JWnZnxPb)
-- [Chat with our docs](https://chatg.pt/DWjSBZn)
+Create or update .env in agents root with provider keys used by CrewAI and your configured LLM provider.
 
-Let's create wonders together with the power and simplicity of crewAI.
+Typical values include:
+
+- OPENAI_API_KEY or GROQ_API_KEY (depending on your model config)
+- Any other keys required by your agent tools
+
+Do not commit .env.
+
+## How To Run
+
+Use two terminals.
+
+### Terminal A: Backend
+
+```powershell
+Set-Location C:\Users\BHARANIDHARAN.S\Downloads\gen_ai\gen_ai\Money\agents
+. .\.venv\Scripts\Activate.ps1
+uv run uvicorn src.agents.api:app --host 127.0.0.1 --port 8010 --reload
+```
+
+### Terminal B: Frontend
+
+```powershell
+Set-Location C:\Users\BHARANIDHARAN.S\Downloads\gen_ai\gen_ai\Money\agents\frontend
+$env:VITE_API_BASE_URL="http://127.0.0.1:8010"
+npm run dev
+```
+
+Open:
+
+- Frontend: http://127.0.0.1:5173 (or next free Vite port shown in terminal)
+- Backend docs: http://127.0.0.1:8010/docs
+
+## API Endpoints
+
+- POST /api/onboarding
+	- Receives incremental onboarding chat history
+	- Returns next question or completion payload with built profile
+- GET /api/profile
+	- Returns saved onboarding profile
+- POST /api/fire
+	- Runs FIRE planner using saved profile (or merged input profile)
+- POST /api/tax
+	- Runs tax analysis
+- POST /api/health
+	- Runs health analysis and returns score
+- POST /api/feed
+	- Runs daily feed generation
+- POST /api/couple
+	- Runs couple planning using merged profile + page inputs
+
+## Data Consistency Model
+
+The app uses a shared profile model:
+
+- Onboarding creates and persists the canonical profile
+- Planner routes auto-load saved profile when request profile is empty
+- Planner routes deep-merge incoming page values over saved profile
+- Frontend stores a local profile copy and refreshes from /api/profile
+
+This ensures onboarding values are reused across all pages and agents.
+
+## Build Commands
+
+Frontend production build:
+
+```powershell
+Set-Location C:\Users\BHARANIDHARAN.S\Downloads\gen_ai\gen_ai\Money\agents\frontend
+npm run build
+```
+
+## Troubleshooting
+
+### 1) npm run dev fails with ENOENT package.json
+
+Cause: Wrong terminal directory.
+
+Fix:
+
+```powershell
+Set-Location C:\Users\BHARANIDHARAN.S\Downloads\gen_ai\gen_ai\Money\agents\frontend
+npm run dev
+```
+
+### 2) Uvicorn fails to bind port
+
+Cause: Port already in use or permission conflict.
+
+Fix: Start on a different port, then match frontend API base URL.
+
+### 3) Planner returns rate limit exceeded
+
+Cause: LLM provider quota exceeded (for example Groq daily token limits).
+
+Fix options:
+
+- Wait for reset window
+- Upgrade provider tier
+- Switch model/provider key in environment/config
+
+### 4) Frontend opens but values look stale
+
+Cause: Old local profile data or onboarding incomplete.
+
+Fix options:
+
+- Complete onboarding again
+- Call GET /api/profile to verify saved data
+- Hard refresh browser
+
+## Notes For Deployment
+
+- Keep backend and frontend base URL aligned via VITE_API_BASE_URL.
+- Store secrets in environment variables, never in repository.
+- Ensure outputs/ and node_modules/ are ignored in git.
+
+## License
+
+Internal/Project-specific. Add your preferred license file if publishing publicly.
