@@ -91,7 +91,7 @@ def run_onboarding():
             inputs={"user_profile": user_data}
         )
 
-        print("\n✅ Onboarding complete. Profile saved.")
+        print("\n Onboarding complete. Profile saved.")
         return result
 
     except Exception as e:
@@ -118,7 +118,7 @@ def run_fire():
         }
     )
 
-    print("\n✅ FIRE plan generated.")
+    print("\n FIRE plan generated.")
     return result
 
 
@@ -140,7 +140,7 @@ def run_tax():
         }
     )
 
-    print("\n✅ Tax analysis generated.")
+    print("\n Tax analysis generated.")
     return result
 
 
@@ -162,7 +162,7 @@ def run_health():
         }
     )
 
-    print("\n✅ Health score generated.")
+    print("\n Health score generated.")
     return result
 
 
@@ -173,7 +173,7 @@ def run_feed():
     profile = _load_profile()
 
     result = FeedCrew().crew().kickoff(inputs={"profile": profile})
-    print("\n✅ Daily feed generated.")
+    print("\n Daily feed generated.")
     return result
 
 
@@ -198,7 +198,7 @@ def run_all():
     print("\nStep 5/5 — Daily Feed")
     run_feed()
 
-    print("\n✅ All crews complete. Check outputs/")
+    print("\n All crews complete. Check outputs/")
 
 
 # ================= MAIN =================
@@ -215,7 +215,7 @@ def run():
     }
 
     if len(sys.argv) < 2:
-        print("\n🤖 AI Money Mentor\n")
+        print("\n AI Money Mentor\n")
         print("Usage: python main.py <crew>\n")
         print("Available:", ", ".join(crews.keys()))
         return
