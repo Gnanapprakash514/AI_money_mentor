@@ -1,0 +1,10 @@
+# Backend Python dependencies
+crewai[litellm,tools]==1.12.2
+lancedb>=0.20.0,<0.30.0
+yfinance>=0.2.54
+fastapi[standard]>=0.115.0
+
+# Frontend dependencies are managed with npm, not pip.
+# See:
+# - frontend/package.json
+# - package.json
